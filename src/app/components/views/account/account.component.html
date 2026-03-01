@@ -1,14 +1,84 @@
 <div class="account-container">
   <header>
     <h1>Broker Account</h1>
-    <p>Manage your algorithmic trading API connections.</p>
+    <p>Connect your Upstox account to enable live data, backtesting, and seasonality analysis.</p>
   </header>
 
-  <div class="api-card">
+  <!-- ─── Step 1: API Credentials Card ─────────────────────────────── -->
+  <div class="api-card" *ngIf="credentialsLoaded">
     <div class="card-header">
       <div class="broker-info">
         <div class="broker-logo">U</div>
-        <h2>Upstox API</h2>
+        <div>
+          <h2>Upstox API Credentials</h2>
+          <p class="subtitle">Your credentials are stored securely per account in Firebase.</p>
+        </div>
+      </div>
+      <span class="status-badge" [class.connected]="hasCredentials" [class.disconnected]="!hasCredentials">
+        {{ hasCredentials ? 'Configured' : 'Not Set' }}
+      </span>
+    </div>
+
+    <div class="card-body">
+
+      <!-- Redirect URI info box -->
+      <div class="info-box">
+        <div class="info-box-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <strong>Required: Whitelist Redirect URL in your Upstox App</strong>
+        </div>
+        <p>In your <a href="https://developer.upstox.com/apps" target="_blank" rel="noopener">Upstox Developer App</a>, set the <strong>Redirect URL</strong> to exactly:</p>
+        <div class="redirect-uri-row">
+          <code class="uri-code">{{ redirectUri }}</code>
+          <button class="copy-btn" (click)="copyRedirectUri()">
+            <span *ngIf="!redirectCopied">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy
+            </span>
+            <span *ngIf="redirectCopied">✓ Copied!</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Credentials form -->
+      <div class="form-section">
+        <div class="form-group">
+          <label for="apiKey">API Key</label>
+          <input id="apiKey" type="text" [(ngModel)]="apiKey" placeholder="Paste your Upstox API Key" autocomplete="off" spellcheck="false"/>
+        </div>
+
+        <div class="form-group">
+          <label for="apiSecret">API Secret</label>
+          <input id="apiSecret" type="password" [(ngModel)]="apiSecret" placeholder="Paste your Upstox API Secret" autocomplete="new-password"/>
+        </div>
+
+        <div class="form-actions">
+          <div class="feedback">
+            <span class="success-msg" *ngIf="saveSuccess">✓ Credentials saved successfully!</span>
+            <span class="error-msg"  *ngIf="saveError">⚠ {{ saveError }}</span>
+          </div>
+          <button class="btn-save" (click)="saveCredentials()" [disabled]="isSaving">
+            <span *ngIf="!isSaving">{{ hasCredentials ? 'Update Credentials' : 'Save Credentials' }}</span>
+            <span *ngIf="isSaving">Saving…</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Step 2: Broker Connection Card ────────────────────────────── -->
+  <div class="api-card connection-card" [class.disabled-card]="!hasCredentials">
+    <div class="card-header">
+      <div class="broker-info">
+        <div class="broker-logo connected-logo" [class.active]="isConnected">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M9 19V6l12-3v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="15" r="3"/>
+          </svg>
+        </div>
+        <div>
+          <h2>Broker Connection</h2>
+          <p class="subtitle">OAuth login via your Upstox account</p>
+        </div>
       </div>
       <span class="status-badge" [class.connected]="isConnected" [class.disconnected]="!isConnected">
         {{ isConnected ? 'Connected' : 'Disconnected' }}
@@ -16,40 +86,50 @@
     </div>
 
     <div class="card-body">
-      <p class="description">
-        Connect your Upstox account to fetch historical market data, run live algorithms, and track your portfolio.
-      </p>
+      <!-- Not configured warning -->
+      <div class="warning-box" *ngIf="!hasCredentials">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Save your API credentials above before connecting.
+      </div>
 
-      <!-- Connected State -->
+      <!-- Connected: Profile -->
       <div class="profile-details" *ngIf="isConnected && upstoxProfile">
         <div class="detail-row">
-          <span class="label">User ID:</span>
+          <span class="label">User ID</span>
           <span class="value">{{ upstoxProfile.user_id }}</span>
         </div>
         <div class="detail-row">
-          <span class="label">Name:</span>
+          <span class="label">Name</span>
           <span class="value">{{ upstoxProfile.user_name }}</span>
         </div>
         <div class="detail-row">
-          <span class="label">Email:</span>
+          <span class="label">Email</span>
           <span class="value">{{ upstoxProfile.email }}</span>
+        </div>
+        <div class="detail-row" *ngIf="upstoxProfile.broker">
+          <span class="label">Broker</span>
+          <span class="value">{{ upstoxProfile.broker }}</span>
         </div>
       </div>
 
-      <!-- Loading Profile State -->
-      <div class="loading-state" *ngIf="isConnected && !upstoxProfile">
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="isConnected && isLoadingProfile">
         <div class="spinner"></div>
-        <p>Loading profile info...</p>
+        <p>Loading profile…</p>
       </div>
+
+      <!-- Disconnected -->
+      <p class="description" *ngIf="!isConnected">
+        Click below to authenticate via Upstox OAuth. You will be redirected to Upstox and then brought back automatically.
+      </p>
     </div>
 
     <div class="card-footer">
-      <button class="btn-primary" *ngIf="!isConnected" (click)="connectUpstox()">
+      <button class="btn-disconnect" *ngIf="isConnected" (click)="disconnectUpstox()">Disconnect</button>
+      <button class="btn-primary" *ngIf="!isConnected" (click)="connectUpstox()" [disabled]="!hasCredentials">
         Connect to Upstox
       </button>
-      <button class="btn-secondary" *ngIf="isConnected" (click)="connectUpstox()">
-        Reconnect / Refresh Sync
-      </button>
+      <button class="btn-secondary" *ngIf="isConnected" (click)="connectUpstox()">Reconnect / Refresh Token</button>
     </div>
   </div>
 </div>
