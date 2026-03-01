@@ -1,5 +1,5 @@
 {
-  "/v2": {
+  "/v3": {
     "target": "https://api.upstox.com",
     "secure": true,
     "changeOrigin": true,

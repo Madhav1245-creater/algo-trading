@@ -9,7 +9,7 @@ import axios from 'axios';
 })
 export class UpstoxService {
 
-  private readonly API_BASE = 'https://api.upstox.com/v2';
+  private readonly API_BASE = 'https://api.upstox.com/v3';
   private accessToken: string | null = null;
 
   /** Reactive connection state — subscribe in components to react to connect/disconnect */
@@ -40,7 +40,7 @@ export class UpstoxService {
   public login(): void {
     const clientId = this.getApiKey();
     const redirectUri = this.getRedirectUri();
-    const authUrl = `https://api.upstox.com/v2/login/authorization/dialog?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    const authUrl = `https://api.upstox.com/v3/login/authorization/dialog?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
     window.location.href = authUrl;
   }
 
