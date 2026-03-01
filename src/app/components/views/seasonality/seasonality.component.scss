@@ -1,0 +1,622 @@
+@import '../backtest/backtest.component.scss';
+
+/* ─── Spinners ─────────────────────────────────────────── */
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 16px;
+
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(99, 102, 241, 0.15);
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+}
+
+.button-spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  margin-bottom: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Panel Header Badge ───────────────────────────────── */
+
+.panel-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #bfdbfe;
+  margin-left: auto;
+}
+
+/* ─── Label with Icon ──────────────────────────────────── */
+
+label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  .label-icon {
+    font-size: 15px;
+    color: #6366f1;
+  }
+}
+
+/* ─── Search Input ─────────────────────────────────────── */
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .search-icon-svg {
+    position: absolute;
+    left: 12px;
+    width: 18px;
+    height: 18px;
+    color: #9ca3af;
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 11px 12px;
+    padding-left: 36px !important;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #0f172a;
+    background: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &::placeholder { color: #9ca3af; }
+
+    &:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+    }
+  }
+}
+
+.search-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ─── Custom Select ────────────────────────────────────── */
+
+.select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .select-icon {
+    position: absolute;
+    right: 12px;
+    color: #6366f1;
+    font-size: 20px;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .styled-select {
+    width: 100%;
+    padding: 11px 40px 11px 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #0f172a;
+    background: #fff;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+    }
+  }
+}
+
+/* ─── Search Dropdown ──────────────────────────────────── */
+
+.dropdown-container {
+  position: relative;
+
+  .dropdown-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1.5px solid #e0e7ff;
+    border-radius: 12px;
+    box-shadow:
+      0 4px 6px -1px rgba(0,0,0,0.07),
+      0 20px 40px -5px rgba(0,0,0,0.12);
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 9999;
+
+    &::-webkit-scrollbar { width: 5px; }
+    &::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 4px; }
+
+    .dropdown-item {
+      padding: 11px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+      transition: background-color 0.12s;
+
+      &:last-child { border-bottom: none; }
+      &:hover { background-color: #f8fafc; }
+      &.selected { background-color: #eef2ff; }
+
+      .dropdown-item-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      strong { display: block; color: #0f172a; font-size: 13px; font-weight: 600; }
+      .sub { font-size: 11px; color: #94a3b8; margin-top: 2px; display: block; }
+      .check-icon { color: #6366f1; font-size: 18px; }
+    }
+  }
+}
+
+/* ─── Selected Stocks Section ──────────────────────────── */
+
+.selected-section {
+  margin-top: 20px;
+  padding: 12px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%);
+  border-radius: 12px;
+  border: 1px dashed #c7d2fe;
+}
+
+.selected-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #4f46e5;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 12px;
+}
+
+.selected-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  .chip {
+    display: inline-flex;
+    align-items: stretch;
+    background: white;
+    border: 1.5px solid #c7d2fe;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(99, 102, 241, 0.1);
+    transition: box-shadow 0.15s, transform 0.15s;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+
+    .chip-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px;
+    }
+
+    .chip-symbol {
+      font-size: 13px;
+      font-weight: 700;
+      color: #3730a3;
+    }
+
+    .chip-sep {
+      color: #a5b4fc;
+      font-size: 14px;
+    }
+
+    .chip-name {
+      font-size: 11px;
+      color: #6366f1;
+      font-weight: 500;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chip-remove {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 6px;
+      background: #eef2ff;
+      border: none;
+      border-left: 1px solid #c7d2fe;
+      cursor: pointer;
+      color: #818cf8;
+      transition: background 0.15s, color 0.15s;
+
+      &:hover {
+        background: #ef4444;
+        color: white;
+        border-left-color: #ef4444;
+      }
+    }
+  }
+}
+
+/* ─── Generate Button ──────────────────────────────────── */
+
+.generate-row {
+  margin-top: 24px;
+}
+
+.generate-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px 24px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow:
+    0 4px 15px rgba(79, 70, 229, 0.4),
+    inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+  letter-spacing: 0.3px;
+
+  .btn-icon, .btn-arrow { font-size: 20px; }
+  .btn-arrow { margin-left: auto; opacity: 0.8; }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(79, 70, 229, 0.5), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+
+  &:active:not(:disabled) { transform: translateY(0); }
+
+  &:disabled {
+    background: linear-gradient(135deg, #94a3b8 0%, #cbd5e1 100%);
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  &.loading {
+    background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+    cursor: wait;
+  }
+}
+
+.generate-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+
+  &.disabled { color: #94a3b8; }
+}
+
+/* ─── Stock Result Block ───────────────────────────────── */
+
+.stock-result-container {
+  margin-bottom: 48px;
+
+  &:last-child { margin-bottom: 0; }
+
+  .stock-title {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e2e8f0;
+
+    span {
+      font-weight: 400;
+      font-size: 14px;
+      color: #64748b;
+    }
+  }
+}
+
+/* ─── Seasonality Heatmap Table ────────────────────────── */
+
+.table-responsive {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.seasonality-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  font-size: 12px;
+
+  /* Header cells */
+  thead {
+    th {
+      padding: 10px 10px;
+      color: #475569;
+      font-weight: 700;
+      background-color: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      white-space: nowrap;
+      font-size: 11px;
+      letter-spacing: 0.3px;
+
+      &.year-header {
+        background: #1e293b;
+        color: #f1f5f9;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+      }
+    }
+
+    /* Avg Return row inside thead */
+    .avg-row td {
+      padding: 9px 10px;
+      font-weight: 700;
+      font-size: 12px;
+      border: 1px solid #dbeafe;
+      background: #eff6ff;
+      white-space: nowrap;
+    }
+  }
+
+  /* Body cells */
+  tbody {
+    tr {
+      &:nth-child(even) { background-color: #fafafa; }
+
+      td {
+        padding: 8px 10px;
+        border: 1px solid #e8ecf0;
+        white-space: nowrap;
+        transition: opacity 0.15s;
+
+        &:hover { opacity: 0.85; cursor: default; }
+      }
+    }
+
+    .year-cell {
+      font-weight: 700;
+      background-color: #f8fafc !important;
+      color: #0f172a;
+      font-size: 13px;
+      border-right: 2px solid #e2e8f0;
+    }
+
+    .data-cell {
+      min-width: 64px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    /* Positive / Negative summary rows */
+    .pos-row td {
+      background: #f0fdf4;
+      color: #15803d;
+      font-weight: 700;
+      font-size: 12px;
+      border: 1px solid #bbf7d0;
+      padding: 9px 10px;
+    }
+    
+    .neg-row td {
+      background: #fff1f2;
+      color: #b91c1c;
+      font-weight: 700;
+      font-size: 12px;
+      border: 1px solid #fecdd3;
+      padding: 9px 10px;
+    }
+  }
+}
+
+
+.button-spinner {
+  width: 16px; height: 16px;
+  border-width: 2px;
+  border-color: rgba(255,255,255,0.3);
+  border-top-color: white;
+  margin-bottom: 0;
+}
+
+// Chips for Selected Stocks
+.selected-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #e0e7ff;
+    color: #4338ca;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+
+    .remove-icon {
+      font-size: 16px;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+}
+
+// Custom Dropdown Styles
+.dropdown-container {
+  position: relative;
+
+  .dropdown-list {
+    position: absolute;
+    top: 100%; // Right below the input
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 50;
+
+    .dropdown-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+      transition: background-color 0.1s;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        background-color: #f8fafc;
+      }
+
+      &.selected {
+        background-color: #f0fdf4;
+      }
+    }
+  }
+}
+
+// Seasonality Table Grid Styling
+.stock-result-container {
+  margin-bottom: 40px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .stock-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e8f0;
+
+    span {
+      font-weight: 400;
+      color: #64748b;
+      font-size: 14px;
+    }
+  }
+}
+
+.seasonality-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  font-size: 13px;
+
+  th {
+    background-color: #f8fafc;
+    padding: 10px 8px;
+    color: #475569;
+    font-weight: 600;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+
+    &.year-header {
+      background-color: #e2e8f0;
+      color: #0f172a;
+    }
+  }
+
+  td {
+    padding: 10px 8px;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+    
+    &.year-cell {
+      font-weight: 700;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    
+    &.data-cell {
+      transition: opacity 0.2s;
+      
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+  }
+}
+
+.results-panel {
+  margin-top: 16px
+}

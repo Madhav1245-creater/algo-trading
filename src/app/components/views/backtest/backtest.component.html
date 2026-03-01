@@ -1,0 +1,152 @@
+<div class="dashboard-header">
+  <div>
+    <h1>Strategy Backtesting</h1>
+    <p>Configure algorithmic trading parameters and simulate historical performance.</p>
+  </div>
+</div>
+
+<div class="stats-grid" *ngIf="lastResult">
+  <div class="stat-card">
+    <h3>Net P&L</h3>
+    <div class="value" [ngClass]="lastResult.metrics.netProfit >= 0 ? 'text-green-600' : 'text-red-600'">
+      ₹{{ lastResult.metrics.netProfit | number:'1.2-2' }}
+    </div>
+    <div class="trend" [ngClass]="lastResult.metrics.netProfit >= 0 ? 'positive' : 'negative'">
+      {{ lastResult.metrics.netProfit >= 0 ? 'Profit' : 'Loss' }}
+    </div>
+  </div>
+  <div class="stat-card">
+    <h3>Win Rate</h3>
+    <div class="value">{{ lastResult.metrics.winRate | number:'1.1-1' }}%</div>
+    <div class="trend neutral">Trades: {{ lastResult.metrics.totalTrades }}</div>
+  </div>
+  <div class="stat-card">
+    <h3>Max Drawdown</h3>
+    <div class="value text-red-600">-₹{{ lastResult.metrics.maxDrawdown | number:'1.2-2' }}</div>
+    <div class="trend negative">{{ lastResult.metrics.maxDrawdownPercent | number:'1.1-1' }}%</div>
+  </div>
+  <div class="stat-card">
+    <h3>Final Capital</h3>
+    <div class="value">₹{{ lastResult.metrics.finalCapital | number:'1.2-2' }}</div>
+    <div class="trend neutral">From ₹{{ initialCapital }}</div>
+  </div>
+</div>
+
+<div class="dashboard-content">
+
+  <!-- Configuration Form Panel -->
+  <div class="panel config-panel">
+    <div class="panel-header">
+      <h2>Configure Backtest</h2>
+    </div>
+    <div class="panel-body">
+      
+      <div class="error-banner" *ngIf="errorMessage">
+        <span class="material-icons">error_outline</span>
+        {{ errorMessage }}
+      </div>
+
+      <form (ngSubmit)="runBacktest()" class="engine-form">
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label>Instrument Key (Upstox Format)</label>
+            <input type="text" [(ngModel)]="instrumentKey" name="instrumentKey" required placeholder="NSE_EQ|INE002A01018">
+          </div>
+          <div class="form-group flex-1">
+            <label>Interval</label>
+            <select [(ngModel)]="interval" name="interval">
+              <option value="1minute">1 Minute</option>
+              <option value="5minute">5 Minute</option>
+              <option value="15minute">15 Minute</option>
+              <option value="30minute">30 Minute</option>
+              <option value="60minute">60 Minute</option>
+              <option value="day">Daily</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>From Date</label>
+            <input type="date" [(ngModel)]="fromDate" name="fromDate" required>
+          </div>
+          <div class="form-group flex-1">
+            <label>To Date</label>
+            <input type="date" [(ngModel)]="toDate" name="toDate" required>
+          </div>
+          <div class="form-group flex-1">
+            <label>Initial Capital (₹)</label>
+            <input type="number" [(ngModel)]="initialCapital" name="initialCapital" required min="1000">
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 mb-4" style="margin-top: -10px;">
+          <strong>Upstox API Limits:</strong> Max 1 year for Daily interval. Max 1 month for 1-minute interval.
+        </p>
+
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label>Strategy Type</label>
+            <select [(ngModel)]="strategyId" name="strategyId">
+              <option value="MACross">Moving Average Crossover (Golden Cross)</option>
+            </select>
+          </div>
+          <div class="form-group flex-1 form-actions">
+             <button type="submit" class="btn-primary" [disabled]="isLoading">
+               <span *ngIf="!isLoading">Run Backtest &nbsp;▶</span>
+               <span *ngIf="isLoading" class="loading-spinner"></span>
+               <span *ngIf="isLoading">&nbsp; Running...</span>
+             </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Results Panel -->
+  <div class="panel results-panel mt-6">
+    <div class="panel-header">
+      <h2>Trade Log & Results</h2>
+    </div>
+    
+    <div class="panel-body empty-state" *ngIf="!lastResult && !isLoading">
+      <span class="material-icons empty-icon text-blue-500" style="font-size: 48px;">trending_up</span>
+      <h3>Ready to Simulate</h3>
+      <p>Configure and run your first backtest to view performance charts and trade logs here.</p>
+    </div>
+
+    <!-- Trade List -->
+    <div class="panel-body p-0" *ngIf="lastResult">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Entry Time</th>
+              <th>Type</th>
+              <th>Quantity</th>
+              <th>Entry Price</th>
+              <th>Exit Time</th>
+              <th>Exit Price</th>
+              <th>Net P&L</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let trade of lastResult.trades">
+              <td>{{ trade.entryTime | date:'short' }}</td>
+              <td><span class="badge" [ngClass]="trade.type === 'LONG' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">{{ trade.type }}</span></td>
+              <td>{{ trade.quantity }}</td>
+              <td>₹{{ trade.entryPrice | number:'1.2-2' }}</td>
+              <td>{{ trade.exitTime ? (trade.exitTime | date:'short') : 'Open' }}</td>
+              <td>{{ trade.exitPrice ? '₹' + (trade.exitPrice | number:'1.2-2') : '--' }}</td>
+              <td [ngClass]="(trade.pnl || 0) >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'">
+                {{ trade.pnl ? '₹' + (trade.pnl | number:'1.2-2') : '--' }}
+              </td>
+            </tr>
+            <tr *ngIf="lastResult.trades.length === 0">
+              <td colspan="7" class="text-center py-4 text-gray-500">No trades were executed during this period with the selected strategy.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

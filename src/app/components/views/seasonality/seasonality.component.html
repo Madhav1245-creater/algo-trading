@@ -1,0 +1,200 @@
+<div class="dashboard-header">
+  <div>
+    <h1>Seasonality Analysis</h1>
+    <p>Identify recurring seasonal patterns from decades of daily market data.</p>
+  </div>
+</div>
+
+<div class="dashboard-content">
+  <div class="panel config-panel">
+    <div class="panel-header">
+      <h2>Configure Instruments</h2>
+      <span class="panel-badge" *ngIf="allStocks.length > 0">{{ allStocks.length | number }} NSE stocks loaded</span>
+    </div>
+    <div class="panel-body">
+      
+      <div class="error-banner" *ngIf="errorMessage">
+        <span class="material-icons">error_outline</span>
+        {{ errorMessage }}
+      </div>
+
+      <!-- Loading State -->
+      <div class="loading-state" *ngIf="isLoadingInstruments">
+        <span class="spinner"></span>
+        <p>Downloading Upstox Master Instrument List...</p>
+      </div>
+
+      <!-- Configuration Form -->
+      <div *ngIf="!isLoadingInstruments" class="engine-form">
+        
+        <div class="form-row">
+          <!-- Search & Select Dropdown -->
+          <div class="form-group flex-2 dropdown-container">
+            <label>Search Stocks (NSE Equity)</label>
+            <div class="search-input-wrapper">
+              <!-- Using SVG instead of Material icon to avoid font subset issues -->
+              <svg class="search-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" [(ngModel)]="searchText" (input)="onSearchChange()"
+                     placeholder="Type symbol or company name (e.g. RELIANCE, TCS)..."
+                     autocomplete="off" class="search-input">
+            </div>
+            
+            <div class="dropdown-list" *ngIf="filteredStocks.length > 0 && searchText.length > 0">
+              <div class="dropdown-item" *ngFor="let stock of filteredStocks"
+                   (click)="toggleSelection(stock)">
+                <div class="dropdown-item-content">
+                  <div>
+                    <strong>{{ stock.tradingsymbol }}</strong>
+                    <span class="sub">{{ stock.name || stock.tradingsymbol }}</span>
+                  </div>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- No results hint -->
+            <p class="search-hint" *ngIf="searchText.length > 0 && filteredStocks.length === 0">
+              No matching stocks found for "{{ searchText }}"
+            </p>
+            <p class="search-hint" *ngIf="searchText.length === 0">
+              Start typing to search {{ allStocks.length | number }} available stocks...
+            </p>
+          </div>
+
+          <!-- Aggregation Period Select -->
+          <div class="form-group flex-1">
+            <label>
+              <span class="material-icons label-icon">calendar_view_month</span>
+              Aggregation Period
+            </label>
+            <div class="select-wrapper">
+              <span class="material-icons select-icon">expand_more</span>
+              <select [(ngModel)]="tableView" (change)="onViewChange()" class="styled-select">
+                <option value="month">Monthly View</option>
+                <option value="week">Weekly View</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected Stocks -->
+        <div class="selected-section" *ngIf="selectedStocks.length > 0">
+          <div class="selected-label">
+            <span class="material-icons" style="font-size:15px">playlist_add_check</span>
+            Selected ({{ selectedStocks.length }})
+          </div>
+          <div class="selected-chips">
+            <div class="chip" *ngFor="let stock of selectedStocks">
+              <div class="chip-info">
+                <span class="chip-symbol">{{ stock.tradingsymbol }}</span>
+                <span class="chip-sep">·</span>
+                <span class="chip-name">{{ stock.name || stock.exchange }}</span>
+              </div>
+              <button class="chip-remove" (click)="removeSelected(stock)" title="Remove {{ stock.tradingsymbol }}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generate Button -->
+        <div class="generate-row">
+          <button class="generate-btn" (click)="generateAnalysis()"
+                  [disabled]="isCalculating || selectedStocks.length === 0"
+                  [class.loading]="isCalculating">
+            <ng-container *ngIf="!isCalculating">
+              <span class="material-icons btn-icon">auto_graph</span>
+              Generate Seasonality Heatmap
+              <span class="material-icons btn-arrow">arrow_forward</span>
+            </ng-container>
+            <ng-container *ngIf="isCalculating">
+              <span class="spinner button-spinner"></span>
+              &nbsp;Fetching maximum available history...
+            </ng-container>
+          </button>
+          <p class="generate-hint" *ngIf="selectedStocks.length > 0 && isCalculating">
+            Fetching full daily history for {{ selectedStocks.length }} stock{{ selectedStocks.length > 1 ? 's' : '' }} — this may take a moment.
+          </p>
+          <p class="generate-hint disabled" *ngIf="selectedStocks.length === 0">
+            Select at least one stock above to generate the heatmap.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Results Panel -->
+  <div class="panel results-panel" *ngIf="results.length > 0">
+    <div class="panel-header">
+      <h2>Seasonality Heatmaps</h2>
+    </div>
+    
+    <div class="panel-body">
+      
+      <!-- One table per selected stock -->
+      <div class="stock-result-container" *ngFor="let result of results">
+        <h3 class="stock-title">{{ result.instrument.tradingsymbol }} <span>({{ result.instrument.name || result.instrument.exchange }})</span></h3>
+        
+        <div class="table-responsive">
+          <div style="overflow-x: auto;">
+            <table class="seasonality-table">
+              <thead>
+                <!-- Column Labels -->
+                <tr>
+                  <th class="year-header">Year</th>
+                  <th *ngFor="let m of result.periodMetrics">{{ m.periodLabel }}</th>
+                </tr>
+                <!-- Average Return Row (pinned at top) -->
+                <tr class="avg-row">
+                  <td class="year-cell">Avg. Return</td>
+                  <td *ngFor="let m of result.periodMetrics"
+                      [ngStyle]="{ color: m.averageReturn > 0 ? '#15803d' : m.averageReturn < 0 ? '#b91c1c' : '#6b7280' }">
+                    {{ m.averageReturn > 0 ? '+' : '' }}{{ m.averageReturn | number:'1.1-1' }}%
+                  </td>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Historical Year Rows -->
+                <tr *ngFor="let yearData of result.yearsData">
+                  <td class="year-cell">{{ yearData.year }}</td>
+                  <td *ngFor="let dp of yearData.dataPoints"
+                      class="data-cell"
+                      [ngStyle]="getCellStyle(dp.percentageChange, dp.startPrice)">
+                    <span *ngIf="dp.startPrice !== 0">{{ dp.percentageChange > 0 ? '+' : '' }}{{ dp.percentageChange | number:'1.1-1' }}%</span>
+                    <span *ngIf="dp.startPrice === 0" style="color:#d1d5db">-</span>
+                  </td>
+                </tr>
+
+                <!-- Positive Probability Row -->
+                <tr class="pos-row">
+                  <td class="year-cell">Positive %</td>
+                  <td *ngFor="let m of result.periodMetrics">
+                    {{ m.positiveProbability | number:'1.0-0' }}%
+                  </td>
+                </tr>
+
+                <!-- Negative Probability Row -->
+                <tr class="neg-row">
+                  <td class="year-cell">Negative %</td>
+                  <td *ngFor="let m of result.periodMetrics">
+                    {{ m.negativeProbability | number:'1.0-0' }}%
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>

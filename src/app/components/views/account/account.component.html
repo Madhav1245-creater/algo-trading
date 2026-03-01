@@ -1,0 +1,55 @@
+<div class="account-container">
+  <header>
+    <h1>Broker Account</h1>
+    <p>Manage your algorithmic trading API connections.</p>
+  </header>
+
+  <div class="api-card">
+    <div class="card-header">
+      <div class="broker-info">
+        <div class="broker-logo">U</div>
+        <h2>Upstox API</h2>
+      </div>
+      <span class="status-badge" [class.connected]="isConnected" [class.disconnected]="!isConnected">
+        {{ isConnected ? 'Connected' : 'Disconnected' }}
+      </span>
+    </div>
+
+    <div class="card-body">
+      <p class="description">
+        Connect your Upstox account to fetch historical market data, run live algorithms, and track your portfolio.
+      </p>
+
+      <!-- Connected State -->
+      <div class="profile-details" *ngIf="isConnected && upstoxProfile">
+        <div class="detail-row">
+          <span class="label">User ID:</span>
+          <span class="value">{{ upstoxProfile.user_id }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Name:</span>
+          <span class="value">{{ upstoxProfile.user_name }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Email:</span>
+          <span class="value">{{ upstoxProfile.email }}</span>
+        </div>
+      </div>
+
+      <!-- Loading Profile State -->
+      <div class="loading-state" *ngIf="isConnected && !upstoxProfile">
+        <div class="spinner"></div>
+        <p>Loading profile info...</p>
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <button class="btn-primary" *ngIf="!isConnected" (click)="connectUpstox()">
+        Connect to Upstox
+      </button>
+      <button class="btn-secondary" *ngIf="isConnected" (click)="connectUpstox()">
+        Reconnect / Refresh Sync
+      </button>
+    </div>
+  </div>
+</div>
