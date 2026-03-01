@@ -8,8 +8,63 @@
   color: #333;
 }
 
+.main-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── Broker disconnected banner ─── */
+.broker-banner {
+  background: linear-gradient(90deg, #fff7ed 0%, #fffbeb 100%);
+  border-bottom: 1px solid #fed7aa;
+  flex-shrink: 0;
+  z-index: 50;
+
+  .banner-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 24px;
+    flex-wrap: wrap;
+
+    svg {
+      stroke: #ea580c;
+      flex-shrink: 0;
+    }
+
+    span {
+      flex: 1;
+      font-size: 13.5px;
+      color: #9a3412;
+      line-height: 1.4;
+
+      strong { font-weight: 700; }
+    }
+  }
+}
+
+.banner-btn {
+  white-space: nowrap;
+  padding: 6px 16px;
+  background: #ea580c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+
+  &:hover {
+    background: #c2410c;
+    transform: translateY(-1px);
+  }
+}
+
 .main-content {
-  flex-grow: 1;
+  flex: 1;
   overflow-y: auto;
   padding: 30px;
 }

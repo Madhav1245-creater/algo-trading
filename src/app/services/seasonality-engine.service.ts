@@ -281,10 +281,17 @@ export class SeasonalityEngineService {
     try {
       console.log('[SeasonalityEngine] Downloading Upstox Master Instrument List via HttpClient...');
       
-      const proxyUrl = '/upstox-assets/market-quote/instruments/exchange/complete.csv.gz';
+        // Use the dev proxy on localhost (avoids CORS); use the direct CDN URL in production.
+        // The Upstox CDN (assets.upstox.com) serves this file with public CORS headers.
+        const isLocal = window.location.hostname === 'localhost';
+        const csvUrl = isLocal
+            ? '/upstox-assets/market-quote/instruments/exchange/complete.csv.gz'
+            : 'https://assets.upstox.com/market-quote/instruments/exchange/complete.csv.gz';
+
+        console.log('[SeasonalityEngine] Fetching instruments from:', csvUrl);
       
       // 1. Fetch as a Blob using Angular HttpClient
-      const gzipBlob = await firstValueFrom(this.http.get(proxyUrl, { responseType: 'blob' }));
+        const gzipBlob = await firstValueFrom(this.http.get(csvUrl, { responseType: 'blob' }));
       
       if (!gzipBlob) {
           throw new Error('Received empty data from Upstox.');

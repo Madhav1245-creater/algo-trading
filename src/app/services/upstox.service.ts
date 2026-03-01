@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { UpstoxCredentialsService } from './upstox-credentials.service';
 import axios from 'axios';
@@ -10,6 +11,9 @@ export class UpstoxService {
 
   private readonly API_BASE = 'https://api.upstox.com/v2';
   private accessToken: string | null = null;
+
+  /** Reactive connection state — subscribe in components to react to connect/disconnect */
+  public isConnected$ = new BehaviorSubject<boolean>(!!localStorage.getItem('upstox_access_token'));
 
   constructor(private credentials: UpstoxCredentialsService) {
     this.accessToken = localStorage.getItem('upstox_access_token');
@@ -73,6 +77,7 @@ export class UpstoxService {
       this.accessToken = response.data.access_token;
       if (this.accessToken) {
         localStorage.setItem('upstox_access_token', this.accessToken);
+        this.isConnected$.next(true);   // ← notify all subscribers immediately
         return true;
       }
       return false;
@@ -99,6 +104,7 @@ export class UpstoxService {
   public logout(): void {
     this.accessToken = null;
     localStorage.removeItem('upstox_access_token');
+    this.isConnected$.next(false);
   }
 
   public isLoggedIn(): boolean { return !!this.accessToken; }
