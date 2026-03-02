@@ -40,7 +40,7 @@ export class UpstoxService {
   public login(): void {
     const clientId = this.getApiKey();
     const redirectUri = this.getRedirectUri();
-    const authUrl = `https://api.upstox.com/v3/login/authorization/dialog?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    const authUrl = `https://api.upstox.com/v2/login/authorization/dialog?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
     window.location.href = authUrl;
   }
 
@@ -67,7 +67,7 @@ export class UpstoxService {
         grant_type: 'authorization_code'
       });
 
-      const response = await axios.post(`${this.API_BASE}/login/authorization/token`, data, {
+      const response = await axios.post(`https://api.upstox.com/v2/login/authorization/token`, data, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json'
@@ -91,7 +91,7 @@ export class UpstoxService {
   // Helper method to make authenticated API calls
   public async getProfile(): Promise<any> {
     if (!this.accessToken) throw new Error('Not logged in to Upstox');
-    const response = await axios.get(`${this.API_BASE}/user/profile`, {
+    const response = await axios.get(`https://api.upstox.com/v2/user/profile`, {
       headers: {
         'Api-Version': '2.0',
         'Authorization': `Bearer ${this.accessToken}`,

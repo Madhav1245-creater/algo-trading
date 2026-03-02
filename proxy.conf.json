@@ -1,4 +1,10 @@
 {
+  "/v2": {
+    "target": "https://api.upstox.com",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
   "/v3": {
     "target": "https://api.upstox.com",
     "secure": true,
