@@ -1,0 +1,36 @@
+<aside class="sidebar">
+  <div class="logo-area">
+    <span class="material-icons logo-icon text-indigo-500">change_history</span>
+    <h2>Algo Trader</h2>
+  </div>
+
+  <nav class="nav-links">
+    <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+      <span class="material-icons icon">dashboard</span>
+      Dashboard
+    </a>
+    <a routerLink="/backtest" routerLinkActive="active" class="nav-item">
+      <span class="material-icons icon">science</span>
+      Studio
+    </a>
+    <a routerLink="/seasonality" routerLinkActive="active" class="nav-item">
+      <span class="material-icons icon">tune</span>
+      Seasonality
+    </a>
+    <a routerLink="/account" routerLinkActive="active" class="nav-item">
+      <span class="material-icons icon">settings</span>
+      Account
+    </a>
+  </nav>
+
+  <div class="user-area">
+    <div class="user-info" *ngIf="userEmail">
+      <div class="avatar">{{ userEmail.charAt(0).toUpperCase() }}</div>
+      <span class="email" [title]="userEmail">{{ userEmail }}</span>
+    </div>
+    <button class="logout-btn" (click)="logout()">
+      <span class="material-icons icon">logout</span>
+      Logout
+    </button>
+  </div>
+</aside>

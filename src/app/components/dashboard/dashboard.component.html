@@ -1,0 +1,60 @@
+<div class="dashboard-header">
+  <div>
+    <h1>Dashboard</h1>
+    <p>Overview of your algorithmic trading performance and active backtests.</p>
+  </div>
+  <button class="btn-primary" routerLink="/backtest">New Backtest</button>
+</div>
+
+<!-- Broker not connected card -->
+<!-- <div class="connect-card" *ngIf="!isConnected">
+  <div class="connect-icon">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/>
+      <line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+  </div>
+  <div class="connect-text">
+    <h3>Broker Not Connected</h3>
+    <p>Connect your Upstox account to start fetching live market data, run backtests, and analyse seasonality patterns.</p>
+  </div>
+  <a routerLink="/account" class="btn-connect">Set Up Connection →</a>
+</div> -->
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <h3>Active Strategies</h3>
+    <div class="value">{{ activeStrategies }}</div>
+    <div class="trend positive">Live</div>
+  </div>
+  <div class="stat-card">
+    <h3>Total P&L</h3>
+    <div class="value">₹0.00</div>
+    <div class="trend neutral">--</div>
+  </div>
+  <div class="stat-card">
+    <h3>Total Trades</h3>
+    <div class="value">{{ totalTrades }}</div>
+    <div class="trend neutral">--</div>
+  </div>
+  <div class="stat-card">
+    <h3>Win Rate</h3>
+    <div class="value">{{ winRate }}%</div>
+    <div class="trend neutral">--</div>
+  </div>
+</div>
+
+<div class="dashboard-content">
+  <div class="panel main-panel">
+    <div class="panel-header">
+      <h2>Recent Backtests</h2>
+    </div>
+    <div class="panel-body empty-state">
+      <span class="material-icons empty-icon text-blue-500" style="font-size: 48px;">trending_up</span>
+      <h3>No Backtests Run Yet</h3>
+      <p>Head over to the Backtesting studio to run your first simulation.</p>
+      <button class="btn-secondary" routerLink="/backtest">Go to Backtesting</button>
+    </div>
+  </div>
+</div>

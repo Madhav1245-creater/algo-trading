@@ -1,0 +1,12 @@
+<div class="auth-container">
+  <div *ngIf="isLoading" class="loading-state">
+    <h2>Connecting to Upstox...</h2>
+    <p>Please wait while we authenticate your account.</p>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-state">
+    <h2>Authentication Error</h2>
+    <p>{{ errorMessage }}</p>
+    <button (click)="retry()">Try Again</button>
+  </div>
+</div>
