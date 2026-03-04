@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { UpstoxInstrument, Candle, SeasonalityResult, SeasonalityYearData, SeasonalityDataPoint, SeasonalityPeriodMetrics } from '../models/backtest.models';
 import axios from 'axios';
 import { firstValueFrom } from 'rxjs';
+import { UpstoxService } from './upstox.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,14 +15,14 @@ export class SeasonalityEngineService {
   // Cache the full list so we don't re-download the massive CSV on every component load
   private allInstruments: UpstoxInstrument[] = [];
 
-  constructor(private http: HttpClient) { }
+    constructor(private http: HttpClient, private upstox: UpstoxService) { }
 
   /**
    * Fetches the maximum available daily data for a given instrument.
    * Bypasses the 1-year Upstox limit by making multiple sequential calls backwards in time until Upstox returns empty.
    */
   async fetchDeepHistoricalData(instrumentKey: string): Promise<Candle[]> {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('upstox_access_token') : null;
+      const token = await this.upstox.getValidToken();
     if (!token) throw new Error("No Upstox token found. Please connect Broker Account.");
 
     let allCandles: Candle[] = [];
@@ -108,7 +109,7 @@ export class SeasonalityEngineService {
    * Calculates the percentage change for each Month or Week across multiple years.
    * Assumes 'candles' is sorted chronologically (oldest to newest).
    */
-  calculateSeasonality(instrument: UpstoxInstrument, candles: Candle[], period: 'month' | 'week'): SeasonalityResult {
+    calculateSeasonality(instrument: UpstoxInstrument, candles: Candle[], period: 'month' | 'week' | 'day'): SeasonalityResult {
      
      // Map to group data by Year
      // Inside each year, map to group data by Period (Month Index 0-11, or Week Number 1-52)
@@ -120,13 +121,17 @@ export class SeasonalityEngineService {
          let periodKey: number;
          if (period === 'month') {
              periodKey = candle.timestamp.getMonth(); // 0-11
-         } else {
+         } else if (period === 'week') {
              // Calculate ISO Week number (1-53)
              const tempDate = new Date(candle.timestamp.getTime());
              tempDate.setHours(0, 0, 0, 0);
              tempDate.setDate(tempDate.getDate() + 3 - (tempDate.getDay() + 6) % 7);
              const week1 = new Date(tempDate.getFullYear(), 0, 4);
              periodKey = 1 + Math.round(((tempDate.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+         } else {
+             const start = new Date(year, 0, 0);
+             const diff = candle.timestamp.getTime() - start.getTime();
+             periodKey = Math.round(diff / 86400000); // 1-366
          }
 
          if (!yearlyGroups.has(year)) {
@@ -150,22 +155,25 @@ export class SeasonalityEngineService {
          
          const dataPoints: SeasonalityDataPoint[] = [];
          
-         // Fix the number of periods (12 months or 52 weeks) so the UI grid is uniform
-         const maxPeriods = period === 'month' ? 12 : 52;
+         // Fix the number of periods (12 months, 52 weeks, 366 days) so the UI grid is uniform
+         const maxPeriods = period === 'month' ? 12 : period === 'week' ? 52 : 366;
          
          for (let p = 0; p < maxPeriods; p++) {
-             // For weeks, the key is 1-indexed. For months, it's 0-indexed.
-             const lookupKey = period === 'week' ? p + 1 : p;
+             // For weeks and days, the key is 1-indexed. For months, it's 0-indexed.
+             const lookupKey = period === 'month' ? p : p + 1;
              const periodCandles = periodsMap.get(lookupKey);
              
              let label = '';
              if (period === 'month') {
                  label = monthNames[p];
-             } else {
+             } else if (period === 'week') {
                  // For weeks (1-52), calculate which month it roughly falls into (every ~4.3 weeks is a month)
-                 // A simple heuristic is: MonthIndex = Math.floor((p) / 4.33)
                  const approximateMonthIndex = Math.min(11, Math.floor(p / 4.33));
                  label = `${monthNames[approximateMonthIndex]} W${p + 1}`;
+             } else {
+                 // Map the 0-365 day index to a calendar date using a leap year anchor (2024)
+                 const dummyDate = new Date(2024, 0, p + 1);
+                 label = `${monthNames[dummyDate.getMonth()]} ${dummyDate.getDate()}`;
              }
 
              if (!periodCandles || periodCandles.length === 0) {
@@ -189,7 +197,7 @@ export class SeasonalityEngineService {
                   if (p === 0) {
                       const prevYearMap = yearlyGroups.get(year - 1);
                       if (prevYearMap) {
-                          const prevPeriodKey = period === 'week' ? 52 : 11;
+                          const prevPeriodKey = period === 'month' ? 11 : period === 'week' ? 52 : 366;
                           const prevCandles = prevYearMap.get(prevPeriodKey);
                           if (prevCandles && prevCandles.length > 0) {
                               const ps = prevCandles.slice().sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
@@ -197,7 +205,7 @@ export class SeasonalityEngineService {
                           }
                       }
                   } else {
-                      const prevKey = period === 'week' ? p : p - 1;
+                      const prevKey = period === 'month' ? p - 1 : p;
                       const prevCandles = periodsMap.get(prevKey);
                       if (prevCandles && prevCandles.length > 0) {
                           const ps = prevCandles.slice().sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
@@ -214,15 +222,38 @@ export class SeasonalityEngineService {
               }
          }
 
+         let yearlyReturn = 0;
+         const allCandlesThisYear = Array.from(periodsMap.values()).flat().sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+         if (allCandlesThisYear.length > 0) {
+             const yearEndPrice = allCandlesThisYear[allCandlesThisYear.length - 1].close;
+
+             let prevYearEndPrice = 0;
+             const prevYearMap = yearlyGroups.get(year - 1);
+             if (prevYearMap) {
+                 const allCandlesPrevYear = Array.from(prevYearMap.values()).flat().sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+                 if (allCandlesPrevYear.length > 0) {
+                     prevYearEndPrice = allCandlesPrevYear[allCandlesPrevYear.length - 1].close;
+                 }
+             }
+
+             if (prevYearEndPrice > 0) {
+                 yearlyReturn = ((yearEndPrice - prevYearEndPrice) / prevYearEndPrice) * 100;
+             } else {
+                 const yearStartPrice = allCandlesThisYear[0].open;
+                 yearlyReturn = ((yearEndPrice - yearStartPrice) / yearStartPrice) * 100;
+             }
+         }
+
          resultYears.push({
              year: year,
-             dataPoints: dataPoints
+             dataPoints: dataPoints,
+             yearlyReturn: yearlyReturn
          });
      }
 
      // Now calculate the aggregated Period Metrics (Avg, Win %, Loss %) for the columns
      const periodMetrics: SeasonalityPeriodMetrics[] = [];
-     const maxPeriods = period === 'month' ? 12 : 52;
+        const maxPeriods = period === 'month' ? 12 : period === 'week' ? 52 : 366;
      
      for (let p = 0; p < maxPeriods; p++) {
          let sumPercentage = 0;

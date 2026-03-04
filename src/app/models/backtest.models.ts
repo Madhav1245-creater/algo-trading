@@ -100,6 +100,7 @@ export interface SeasonalityPeriodMetrics {
 export interface SeasonalityYearData {
   year: number;
   dataPoints: SeasonalityDataPoint[];
+  yearlyReturn?: number; // Total return for the year
 }
 
 export interface SeasonalityResult {

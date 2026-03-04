@@ -1,3 +1,5 @@
+<div class="dropdown-backdrop" *ngIf="isSectorDropdownOpen || isPeriodDropdownOpen || filteredStocks.length > 0" (click)="closeDropdowns()"></div>
+
 <div class="dashboard-header">
   <div>
     <h1>Seasonality Analysis</h1>
@@ -9,7 +11,6 @@
   <div class="panel config-panel">
     <div class="panel-header">
       <h2>Configure Instruments</h2>
-      <span class="panel-badge" *ngIf="allStocks.length > 0">{{ allStocks.length | number }} NSE stocks loaded</span>
     </div>
     <div class="panel-body">
       
@@ -38,7 +39,7 @@
               </svg>
               <input type="text" [(ngModel)]="searchText" (input)="onSearchChange()"
                      placeholder="Type symbol or company name (e.g. RELIANCE, TCS)..."
-                     autocomplete="off" class="search-input">
+                     autocomplete="off" class="search-input" [disabled]="selectedSector !== ''">
             </div>
             
             <div class="dropdown-list" *ngIf="filteredStocks.length > 0 && searchText.length > 0">
@@ -60,23 +61,76 @@
             <p class="search-hint" *ngIf="searchText.length > 0 && filteredStocks.length === 0">
               No matching stocks found for "{{ searchText }}"
             </p>
-            <p class="search-hint" *ngIf="searchText.length === 0">
+            <p class="search-hint" *ngIf="searchText.length === 0 && !selectedSector">
               Start typing to search {{ allStocks.length | number }} available stocks...
+            </p>
+            <p class="search-hint" *ngIf="selectedSector">
+              Individual search disabled while a sector is selected.
             </p>
           </div>
 
+          <!-- Sector Select Dropdown -->
+          <div class="form-group flex-1 dropdown-container">
+            <label>
+              <span class="material-icons label-icon">category</span>
+              Sector
+            </label>
+            <div class="select-wrapper" (click)="isSectorDropdownOpen = !isSectorDropdownOpen">
+              <span class="material-icons select-icon">expand_more</span>
+              <div class="styled-select display-value">
+                {{ selectedSector || 'All Stocks' }}
+              </div>
+            </div>
+            
+            <div class="dropdown-list top-75" *ngIf="isSectorDropdownOpen">
+              <div class="dropdown-item" [class.selected]="selectedSector === ''" (click)="selectSector('')">
+                <div class="dropdown-item-content">
+                  <strong>All Stocks</strong>
+                  <span class="material-icons check-icon" *ngIf="selectedSector === ''">check</span>
+                </div>
+              </div>
+              <div class="dropdown-item" *ngFor="let s of sectors" 
+                   [class.selected]="selectedSector === s" (click)="selectSector(s)">
+                <div class="dropdown-item-content">
+                  <strong>{{ s }}</strong>
+                  <span class="material-icons check-icon" *ngIf="selectedSector === s">check</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Aggregation Period Select -->
-          <div class="form-group flex-1">
+          <div class="form-group flex-1 dropdown-container">
             <label>
               <span class="material-icons label-icon">calendar_view_month</span>
               Aggregation Period
             </label>
-            <div class="select-wrapper">
+            <div class="select-wrapper" (click)="isPeriodDropdownOpen = !isPeriodDropdownOpen">
               <span class="material-icons select-icon">expand_more</span>
-              <select [(ngModel)]="tableView" (change)="onViewChange()" class="styled-select">
-                <option value="month">Monthly View</option>
-                <option value="week">Weekly View</option>
-              </select>
+              <div class="styled-select display-value">
+                {{ tableView === 'day' ? 'Daily View' : tableView === 'month' ? 'Monthly View' : 'Weekly View' }}
+              </div>
+            </div>
+            
+            <div class="dropdown-list" *ngIf="isPeriodDropdownOpen">
+              <div class="dropdown-item" [class.selected]="tableView === 'day'" (click)="selectPeriod('day')">
+                <div class="dropdown-item-content">
+                  <strong>Daily View</strong>
+                  <span class="material-icons check-icon" *ngIf="tableView === 'day'">check</span>
+                </div>
+              </div>
+              <div class="dropdown-item" [class.selected]="tableView === 'week'" (click)="selectPeriod('week')">
+                <div class="dropdown-item-content">
+                  <strong>Weekly View</strong>
+                  <span class="material-icons check-icon" *ngIf="tableView === 'week'">check</span>
+                </div>
+              </div>
+              <div class="dropdown-item" [class.selected]="tableView === 'month'" (click)="selectPeriod('month')">
+                <div class="dropdown-item-content">
+                  <strong>Monthly View</strong>
+                  <span class="material-icons check-icon" *ngIf="tableView === 'month'">check</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -140,17 +194,22 @@
     <div class="panel-body">
       
       <!-- One table per selected stock -->
-      <div class="stock-result-container" *ngFor="let result of results">
-        <h3 class="stock-title">{{ result.instrument.tradingsymbol }} <span>({{ result.instrument.name || result.instrument.exchange }})</span></h3>
+      <details class="stock-result-accordion" *ngFor="let result of results" open>
+        <summary class="stock-title-summary">
+          <h3 class="stock-title" style="margin: 0;">{{ result.instrument.tradingsymbol }} <span>({{ result.instrument.name || result.instrument.exchange }})</span></h3>
+          <span class="material-icons accordion-icon">expand_more</span>
+        </summary>
         
-        <div class="table-responsive">
-          <div style="overflow-x: auto;">
-            <table class="seasonality-table">
+        <div class="accordion-content">
+          <div class="table-responsive">
+            <div class="table-scroll-container">
+              <table class="seasonality-table">
               <thead>
                 <!-- Column Labels -->
                 <tr>
                   <th class="year-header">Year</th>
                   <th *ngFor="let m of result.periodMetrics">{{ m.periodLabel }}</th>
+                  <th class="year-header yearly-return">Yearly Return</th>
                 </tr>
                 <!-- Average Return Row (pinned at top) -->
                 <tr class="avg-row">
@@ -159,6 +218,7 @@
                       [ngStyle]="{ color: m.averageReturn > 0 ? '#15803d' : m.averageReturn < 0 ? '#b91c1c' : '#6b7280' }">
                     {{ m.averageReturn > 0 ? '+' : '' }}{{ m.averageReturn | number:'1.1-1' }}%
                   </td>
+                  <td></td>
                 </tr>
               </thead>
               <tbody>
@@ -171,6 +231,10 @@
                     <span *ngIf="dp.startPrice !== 0">{{ dp.percentageChange > 0 ? '+' : '' }}{{ dp.percentageChange | number:'1.1-1' }}%</span>
                     <span *ngIf="dp.startPrice === 0" style="color:#d1d5db">-</span>
                   </td>
+                  <td class="data-cell yearly-return-cell" [ngStyle]="getCellStyle(yearData.yearlyReturn || 0, yearData.yearlyReturn !== undefined ? 1 : 0)">
+                    <span *ngIf="yearData.yearlyReturn !== undefined">{{ yearData.yearlyReturn > 0 ? '+' : '' }}{{ yearData.yearlyReturn | number:'1.1-1' }}%</span>
+                    <span *ngIf="yearData.yearlyReturn === undefined" style="color:#d1d5db">-</span>
+                  </td>
                 </tr>
 
                 <!-- Positive Probability Row -->
@@ -179,6 +243,7 @@
                   <td *ngFor="let m of result.periodMetrics">
                     {{ m.positiveProbability | number:'1.0-0' }}%
                   </td>
+                  <td></td>
                 </tr>
 
                 <!-- Negative Probability Row -->
@@ -187,12 +252,14 @@
                   <td *ngFor="let m of result.periodMetrics">
                     {{ m.negativeProbability | number:'1.0-0' }}%
                   </td>
+                  <td></td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
-      </div>
+        </div>
+      </details>
 
     </div>
   </div>

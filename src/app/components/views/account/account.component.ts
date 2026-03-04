@@ -51,8 +51,8 @@ export class AccountComponent implements OnInit {
     this.credentialsLoaded = true;
   }
 
-  checkConnection() {
-    this.isConnected = this.upstoxService.isAuthenticated();
+  async checkConnection() {
+    this.isConnected = this.upstoxService.hasLocalToken();
     if (this.isConnected) {
       this.isLoadingProfile = true;
       this.fetchProfile();
@@ -61,8 +61,13 @@ export class AccountComponent implements OnInit {
 
   async fetchProfile() {
     try {
-      const result = await this.upstoxService.getProfile();
-      this.upstoxProfile = result.data;
+      const result = await this.upstoxService.getProfile(true); // force local
+      if (result && result.data) {
+        this.upstoxProfile = result.data;
+      } else {
+        this.isConnected = false;
+        this.upstoxProfile = null;
+      }
     } catch {
       this.isConnected = false;
     } finally {

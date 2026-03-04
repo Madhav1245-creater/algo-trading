@@ -9,14 +9,19 @@ import axios from 'axios';
 })
 export class UpstoxService {
 
-  private readonly API_BASE = 'https://api.upstox.com/v3';
+  private readonly API_BASE = 'https://api.upstox.com/v2';
   private accessToken: string | null = null;
 
   /** Reactive connection state — subscribe in components to react to connect/disconnect */
-  public isConnected$ = new BehaviorSubject<boolean>(!!localStorage.getItem('upstox_access_token'));
+  public isConnected$ = new BehaviorSubject<boolean>(false);
 
   constructor(private credentials: UpstoxCredentialsService) {
     this.accessToken = localStorage.getItem('upstox_access_token');
+
+    // Check initial connection state async
+    this.getValidToken().then(token => {
+      if (token) this.isConnected$.next(true);
+    });
   }
 
   /** Returns the redirect URI based on current host (localhost vs production) */
@@ -77,7 +82,14 @@ export class UpstoxService {
       this.accessToken = response.data.access_token;
       if (this.accessToken) {
         localStorage.setItem('upstox_access_token', this.accessToken);
-        this.isConnected$.next(true);   // ← notify all subscribers immediately
+        this.isConnected$.next(true);   // notify all subscribers immediately
+
+        // --- ADMIN / SUPERUSER LOGIC ---
+        const isSuper = await this.credentials.isSuperUser();
+        if (isSuper) {
+          await this.credentials.saveGlobalAccessToken(this.accessToken);
+        }
+
         return true;
       }
       return false;
@@ -88,13 +100,43 @@ export class UpstoxService {
     }
   }
 
+  // Ensure we have a valid token (local or global)
+  public async getValidToken(): Promise<string | null> {
+    if (this.accessToken) return this.accessToken;
+
+    let localToken = localStorage.getItem('upstox_access_token');
+    if (localToken) {
+      this.accessToken = localToken;
+      return localToken;
+    }
+
+    const globalToken = await this.credentials.getGlobalAccessToken();
+    if (globalToken) {
+      this.accessToken = globalToken;
+      return globalToken;
+    }
+
+    return null;
+  }
+
   // Helper method to make authenticated API calls
-  public async getProfile(): Promise<any> {
-    if (!this.accessToken) throw new Error('Not logged in to Upstox');
-    const response = await axios.get(`https://api.upstox.com/v2/user/profile`, {
+  public async getProfile(forceLocal: boolean = false): Promise<any> {
+    let token: string | null = null;
+
+    if (forceLocal) {
+      token = localStorage.getItem('upstox_access_token');
+    } else {
+      token = await this.getValidToken();
+    }
+
+    if (!token) {
+      console.warn('[UpstoxService] No local or global token available for profile fetch');
+      return null;
+    }
+    const response = await axios.get(`${this.API_BASE}/user/profile`, {
       headers: {
         'Api-Version': '2.0',
-        'Authorization': `Bearer ${this.accessToken}`,
+        'Authorization': `Bearer ${token}`,
         'Accept': 'application/json'
       }
     });
@@ -104,9 +146,17 @@ export class UpstoxService {
   public logout(): void {
     this.accessToken = null;
     localStorage.removeItem('upstox_access_token');
-    this.isConnected$.next(false);
+    // If they log out of their personal account, we check if there's still a global token fallback
+    this.getValidToken().then(token => {
+      this.isConnected$.next(!!token);
+    });
   }
 
-  public isLoggedIn(): boolean { return !!this.accessToken; }
-  public isAuthenticated(): boolean { return this.isLoggedIn(); }
+  public hasLocalToken(): boolean {
+    return !!localStorage.getItem('upstox_access_token');
+  }
+
+  public async isLoggedIn(): Promise<boolean> {
+    return (await this.getValidToken()) !== null;
+  }
 }

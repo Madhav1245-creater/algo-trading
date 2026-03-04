@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SeasonalityEngineService } from '../../../services/seasonality-engine.service';
 import { UpstoxInstrument, SeasonalityResult, Candle } from '../../../models/backtest.models';
+import { SECTOR_MAPPING, SECTORS } from '../../../data/sectors';
 
 @Component({
   selector: 'app-seasonality',
@@ -17,13 +18,15 @@ export class SeasonalityComponent implements OnInit {
   errorMessage = '';
 
   // Instrument Selection
+  sectors = SECTORS;
+  selectedSector = '';
   allStocks: UpstoxInstrument[] = [];
   filteredStocks: UpstoxInstrument[] = [];
   selectedStocks: UpstoxInstrument[] = [];
   searchText = '';
 
   // Table Configuration
-  tableView: 'week' | 'month' = 'month';
+  tableView: 'day' | 'week' | 'month' = 'month';
   isCalculating = false;
 
   // Cache to store the massive daily payload so switching views is instant
@@ -31,6 +34,12 @@ export class SeasonalityComponent implements OnInit {
 
   // Results
   results: SeasonalityResult[] = [];
+
+  // Dropdown UI states
+  isSectorDropdownOpen = false;
+  isPeriodDropdownOpen = false;
+
+  // Click outside listener helper variables (not strictly needed with a backdrop, but good practice)
 
   constructor(private seasonalityEngine: SeasonalityEngineService) {}
 
@@ -94,6 +103,41 @@ export class SeasonalityComponent implements OnInit {
   removeSelected(stock: UpstoxInstrument) {
      this.selectedStocks = this.selectedStocks.filter(s => s.instrument_key !== stock.instrument_key);
      this.cachedCandles.delete(stock.instrument_key);
+    // If user customizes a sector selection by removing a stock, convert it to a custom list
+    if (this.selectedSector) {
+      this.selectedSector = '';
+    }
+  }
+
+  onSectorChange() {
+    this.selectedStocks = [];
+    if (!this.selectedSector) {
+      return;
+    }
+    const symbols = SECTOR_MAPPING[this.selectedSector];
+
+    // Auto-fetch all stocks for this sector
+    const sectorStocks = this.allStocks.filter(s => symbols.includes(s.tradingsymbol));
+    this.selectedStocks = sectorStocks;
+  }
+
+  selectSector(sector: string) {
+    this.selectedSector = sector;
+    this.isSectorDropdownOpen = false;
+    this.onSectorChange();
+  }
+
+  selectPeriod(period: 'day' | 'week' | 'month') {
+    this.tableView = period;
+    this.isPeriodDropdownOpen = false;
+    this.onViewChange();
+  }
+
+  closeDropdowns() {
+    this.isSectorDropdownOpen = false;
+    this.isPeriodDropdownOpen = false;
+    this.searchText = '';
+    this.filteredStocks = [];
   }
 
   /**
@@ -107,8 +151,8 @@ export class SeasonalityComponent implements OnInit {
     this.results = [];
 
     try {
-       // Fetch everything concurrently
-       const fetchPromises = this.selectedStocks.map(async (stock) => {
+      // Fetch sequentially to avoid rate limiting
+      for (const stock of this.selectedStocks) {
            let candles = this.cachedCandles.get(stock.instrument_key);
            
            if (!candles) {
@@ -116,16 +160,19 @@ export class SeasonalityComponent implements OnInit {
                candles = await this.seasonalityEngine.fetchDeepHistoricalData(stock.instrument_key);
                
                if (!candles || candles.length === 0) {
-                   throw new Error(`Could not fetch data for ${stock.tradingsymbol}`);
+                 console.warn(`Could not fetch data for ${stock.tradingsymbol}`);
+                 continue;
                }
                // Save to memory so toggling view uses this instead of hitting API again
                this.cachedCandles.set(stock.instrument_key, candles);
            }
            
-           return this.seasonalityEngine.calculateSeasonality(stock, candles, this.tableView);
-       });
+        const result = this.seasonalityEngine.calculateSeasonality(stock, candles, this.tableView);
+        if (result) {
+          this.results.push(result);
+        }
+      }
 
-       this.results = await Promise.all(fetchPromises);
        console.log('[Seasonality] Complete analysis results:', this.results);
       
     } catch (error: any) {

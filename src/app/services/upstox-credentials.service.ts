@@ -56,4 +56,42 @@ export class UpstoxCredentialsService {
 
   setCached(c: UpstoxCredentials) { this._cached = c; }
   getCached(): UpstoxCredentials | null { return this._cached; }
+
+  async isSuperUser(): Promise<boolean> {
+    await (this.auth as any).authStateReady();
+    const uid = this.auth.currentUser?.uid;
+    if (!uid) return false;
+    try {
+      const snap = await getDoc(doc(this.firestore, `users/${uid}`));
+      return snap.exists() ? !!snap.data()['is_superuser'] : false;
+    } catch (e) {
+      console.error('[UpstoxCreds] isSuperUser error:', e);
+      return false;
+    }
+  }
+
+  async saveGlobalAccessToken(token: string): Promise<void> {
+    try {
+      await setDoc(doc(this.firestore, 'settings/global-upstox'), {
+        access_token: token,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      console.log('[UpstoxCreds] Global access token updated.');
+    } catch (e) {
+      console.error('[UpstoxCreds] Failed to save global token:', e);
+    }
+  }
+
+  async getGlobalAccessToken(): Promise<string | null> {
+    try {
+      const snap = await getDoc(doc(this.firestore, 'settings/global-upstox'));
+      if (snap.exists() && snap.data()['access_token']) {
+        return snap.data()['access_token'];
+      }
+      return null;
+    } catch (e) {
+      console.error('[UpstoxCreds] Failed to get global token:', e);
+      return null;
+    }
+  }
 }

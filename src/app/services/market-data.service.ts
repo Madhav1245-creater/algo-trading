@@ -33,14 +33,10 @@ export class MarketDataService {
     const toDateStr = this.formatDate(request.toDate);
     const fromDateStr = this.formatDate(request.fromDate);
 
-    if (!this.upstoxService.isAuthenticated()) {
-      throw new Error("Must be connected to Upstox to fetch market data.");
-    }
-
-    const token = typeof window !== 'undefined' ? localStorage.getItem('upstox_access_token') : null;
+    const token = await this.upstoxService.getValidToken();
 
     if (!token) {
-        throw new Error("No Upstox token found");
+      throw new Error("Must be connected to Upstox to fetch market data.");
     }
 
     try {

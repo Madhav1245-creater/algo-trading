@@ -122,3 +122,47 @@
     }
   }
 }
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    height: auto;
+    padding: 10px 12px;
+    flex-direction: row;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
+    z-index: 100;
+    justify-content: space-around;
+
+    .logo-area { display: none; }
+
+    .nav-links {
+      flex-direction: row;
+      justify-content: space-around;
+      gap: 0;
+      width: 100%;
+
+      .nav-item {
+        flex-direction: column;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px;
+        font-size: 10px;
+        width: 70px;
+        text-align: center;
+        border-radius: 12px;
+
+        .icon { 
+          font-size: 24px; 
+          margin-bottom: 2px;
+        }
+
+        &.active {
+          background-color: rgba(56, 189, 248, 0.15);
+          color: #38bdf8;
+        }
+      }
+    }
+
+    .user-area { display: none; }
+  }
+}
